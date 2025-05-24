@@ -1,32 +1,37 @@
 import requests
 
-def is_username_available(username):
-    url = f"https://www.instagram.com/{username}/?__a=1&__d=dis"
+def is_instagram_username_available(username):
+    url = f"https://www.instagram.com/{username}/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept": "application/json",
-        "X-Requested-With": "XMLHttpRequest"
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.google.com/",
+        "Connection": "keep-alive",
     }
 
-    response = requests.get(url, headers=headers)
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
 
-    if response.status_code == 404:
-        return True  # Username is available
-    elif response.status_code == 200:
-        try:
-            data = response.json()
-            if "graphql" in data and "user" in data["graphql"]:
-                return False  # Username exists
-        except:
-            return True  # If no user data in JSON, username is likely available
-    else:
-        print(f"[!] Unexpected status: {response.status_code}")
-        return False
+        # Check known error message in HTML
+        if "Sorry, this page isn't available." in response.text:
+            return True  # Username is available
+        elif response.status_code == 200:
+            return False  # Username is taken
+        else:
+            print(f"[!] Unexpected response code: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"[!] Error checking username: {e}")
+        return None
 
-# --- MAIN ---
+# --- Main Program ---
 if __name__ == "__main__":
     username = input("Enter Instagram username to check: ").strip()
-    if is_username_available(username):
-        print(f"[+] The username '{username}' is AVAILABLE.")
+    result = is_instagram_username_available(username)
+
+    if result is True:
+        print(f"[+] Username '{username}' is AVAILABLE.")
+    elif result is False:
+        print(f"[-] Username '{username}' is TAKEN.")
     else:
-        print(f"[-] The username '{username}' is TAKEN.")
+        print(f"[!] Could not determine availability of '{username}'.")
