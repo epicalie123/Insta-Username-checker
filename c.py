@@ -1,19 +1,11 @@
 import requests
 
 def is_username_available(username):
-    url = f"https://www.instagram.com/{username}/"
+    url = f"https://www.instagram.com/{username}/?__a=1&__d=dis"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "DNT": "1",  # Do Not Track
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "application/json",
+        "X-Requested-With": "XMLHttpRequest"
     }
 
     response = requests.get(url, headers=headers)
@@ -21,9 +13,14 @@ def is_username_available(username):
     if response.status_code == 404:
         return True  # Username is available
     elif response.status_code == 200:
-        return False  # Username is taken
+        try:
+            data = response.json()
+            if "graphql" in data and "user" in data["graphql"]:
+                return False  # Username exists
+        except:
+            return True  # If no user data in JSON, username is likely available
     else:
-        print(f"[!] Unexpected response ({response.status_code}) for '{username}'")
+        print(f"[!] Unexpected status: {response.status_code}")
         return False
 
 # --- MAIN ---
