@@ -1,49 +1,81 @@
 import requests
+import random
+import string
+import threading
 from bs4 import BeautifulSoup
+import time
 
-def check_instagram_profile(username):
+TELEGRAM_BOT_TOKEN = "7895423038:AAEo9FCKQwQaR_8GN3XR_Xe-yJ8_DacCBrk"
+TELEGRAM_CHAT_ID = "7358850946"
+
+# CONFIGURATION
+USERNAME_LENGTH = 10
+THREAD_COUNT = 10
+NEEDED_AVAILABLE = 2
+
+available_usernames = []
+lock = threading.Lock()
+
+def send_telegram_message(message):
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    data = {"chat_id": TELEGRAM_CHAT_ID, "text": message}
+    try:
+        requests.post(url, data=data)
+    except Exception as e:
+        print(f"Telegram error: {e}")
+
+def generate_username():
+    chars = string.ascii_lowercase + string.digits
+    return ''.join(random.choice(chars) for _ in range(USERNAME_LENGTH))
+
+def is_username_available(username):
     url = f"https://www.instagram.com/{username}/"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "User-Agent": "Mozilla/5.0"
     }
 
     try:
-        response = requests.get(url, headers=headers, allow_redirects=True)
-
-        # Step 1: Check if it redirects to homepage (usually means account doesn't exist)
-        if response.url != url:
-            return {"exists": False, "message": "Instagram redirected — likely user does not exist."}
-
-        # Step 2: Check if meta tag is available (bio/follower info)
+        response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
         meta = soup.find("meta", attrs={"name": "description"})
 
-        # Step 3: Use content of page title or meta to detect error message
-        page_title = soup.title.string if soup.title else ""
+        if not meta:
+            return True  # No meta tag = available
+        return False
 
-        if "not found" in page_title.lower() or "error" in page_title.lower():
-            return {"exists": False, "message": "Instagram says page not found."}
+    except Exception:
+        return False  # On error, assume not available
 
-        if meta:
-            return {
-                "exists": True,
-                "username": username,
-                "summary": meta["content"]
-            }
+def check_loop():
+    global available_usernames
+    while True:
+        with lock:
+            if len(available_usernames) >= NEEDED_AVAILABLE:
+                break
+
+        username = generate_username()
+        if is_username_available(username):
+            with lock:
+                if username not in available_usernames:
+                    available_usernames.append(username)
+                    print(f"[AVAILABLE] {username}")
+                    send_telegram_message(f"Instagram username available: @{username}")
         else:
-            return {
-                "exists": True,
-                "username": username,
-                "message": "Profile exists, but no description meta tag found."
-            }
+            print(f"[TAKEN] {username}")
+        time.sleep(random.uniform(0.5, 1.2))  # Random delay to reduce risk
 
-    except Exception as e:
-        return {"exists": None, "message": f"Error: {str(e)}"}
+def main():
+    threads = []
 
+    for _ in range(THREAD_COUNT):
+        t = threading.Thread(target=check_loop)
+        t.start()
+        threads.append(t)
 
-# Test it
+    for t in threads:
+        t.join()
+
+    print("Done. Available usernames:", available_usernames)
+
 if __name__ == "__main__":
-    usernames = ["instagram", "nurturethedevilxyz1", "zuck"]
-    for user in usernames:
-        result = check_instagram_profile(user)
-        print(f"Checking @{user}: {result}")
+    main()
