@@ -1,42 +1,35 @@
 import requests
 
-def check_username(username):
-    # Method 1: Profile visit
-    profile_url = f"https://www.instagram.com/{username}/"
+def is_username_available(username):
+    url = f"https://www.instagram.com/{username}/"
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "DNT": "1",  # Do Not Track
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1"
     }
 
-    profile_response = requests.get(profile_url, headers=headers)
-    profile_available = profile_response.status_code == 404
+    response = requests.get(url, headers=headers)
 
-    # Method 2: Recovery endpoint (check if username can be used for password recovery)
-    recovery_url = "https://www.instagram.com/accounts/account_recovery_send_ajax/"
-    data = {
-        'email_or_username': username
-    }
-    recovery_headers = {
-        'User-Agent': 'Mozilla/5.0',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Referer': 'https://www.instagram.com/accounts/password/reset/',
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
-
-    session = requests.Session()
-    recovery_response = session.post(recovery_url, headers=recovery_headers, data=data)
-    try:
-        recovery_json = recovery_response.json()
-        recovery_available = not recovery_json.get('account_exists', True)
-    except:
-        recovery_available = False
-
-    # Combine logic
-    if profile_available and recovery_available:
-        print(f"[+] The username '{username}' is AVAILABLE.")
+    if response.status_code == 404:
+        return True  # Username is available
+    elif response.status_code == 200:
+        return False  # Username is taken
     else:
-        print(f"[-] The username '{username}' is TAKEN.")
+        print(f"[!] Unexpected response ({response.status_code}) for '{username}'")
+        return False
 
 # --- MAIN ---
 if __name__ == "__main__":
-    user = input("Enter Instagram username to check: ").strip()
-    check_username(user)
+    username = input("Enter Instagram username to check: ").strip()
+    if is_username_available(username):
+        print(f"[+] The username '{username}' is AVAILABLE.")
+    else:
+        print(f"[-] The username '{username}' is TAKEN.")
