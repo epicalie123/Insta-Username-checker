@@ -35,7 +35,7 @@ def check_instagram_username(username):
         return f"⚠️ [ERROR] @{username} (API issue: {e})"
 
 # Usernames to check
-usernames = ["zuck", "nurturethedevilxbej"]
+usernames = ["nurturethedevil", "nurturethedevilxbej"]
 
 for username in usernames:
     result = check_instagram_username(username)
