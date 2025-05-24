@@ -45,7 +45,7 @@ def check_instagram_profile(username):
 
 # Example usage
 if __name__ == "__main__":
-    usernames = ["instagram", "thisuserdoesnotexist777"]
+    usernames = ["instagram", "nurturethedevilxyz"]
     for user in usernames:
         result = check_instagram_profile(user)
         print(f"Checking @{user}: {result}")
