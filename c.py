@@ -5,8 +5,9 @@ import threading
 from bs4 import BeautifulSoup
 import time
 
-TELEGRAM_BOT_TOKEN = "7895423038:AAEo9FCKQwQaR_8GN3XR_Xe-yJ8_DacCBrk"
-TELEGRAM_CHAT_ID = "7358850946"
+# Ask user for Telegram credentials
+TELEGRAM_BOT_TOKEN = input("Enter your Telegram bot token: ").strip()
+TELEGRAM_CHAT_ID = input("Enter your Telegram chat ID: ").strip()
 
 # CONFIGURATION
 USERNAME_LENGTH = 10
@@ -62,7 +63,7 @@ def check_loop():
                     send_telegram_message(f"Instagram username available: @{username}")
         else:
             print(f"[TAKEN] {username}")
-        time.sleep(random.uniform(0.5, 1.2))  # Random delay to reduce risk
+        time.sleep(random.uniform(0.5, 1.2))  # Random delay
 
 def main():
     threads = []
