@@ -1,43 +1,42 @@
 import requests
-import random
-from time import sleep
-from user_agent import generate_user_agent
 
-# Function to check if a username is available
-def check_instagram_username(username):
+def check_username(username):
+    # Method 1: Profile visit
+    profile_url = f"https://www.instagram.com/{username}/"
     headers = {
-        "User-Agent": generate_user_agent(),
-        "X-IG-App-ID": "936619743392459",  # Instagram Web App ID
-        "X-Requested-With": "XMLHttpRequest",
-        "Referer": "https://www.instagram.com/",
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
     }
 
-    # Fake login attempt to check username
-    fake_password = "#PWD_INSTAGRAM_BROWSER:0:0:fake_password"
+    profile_response = requests.get(profile_url, headers=headers)
+    profile_available = profile_response.status_code == 404
+
+    # Method 2: Recovery endpoint (check if username can be used for password recovery)
+    recovery_url = "https://www.instagram.com/accounts/account_recovery_send_ajax/"
     data = {
-        "username": username,
-        "enc_password": fake_password,
-        "optIntoOneTap": "false",
+        'email_or_username': username
+    }
+    recovery_headers = {
+        'User-Agent': 'Mozilla/5.0',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Referer': 'https://www.instagram.com/accounts/password/reset/',
+        'Content-Type': 'application/x-www-form-urlencoded'
     }
 
+    session = requests.Session()
+    recovery_response = session.post(recovery_url, headers=recovery_headers, data=data)
     try:
-        response = requests.post(
-            "https://www.instagram.com/api/v1/web/accounts/login/ajax/",
-            headers=headers,
-            data=data,
-        ).json()
+        recovery_json = recovery_response.json()
+        recovery_available = not recovery_json.get('account_exists', True)
+    except:
+        recovery_available = False
 
-        if response.get("user", False) or "showAccountRecoveryModal" in str(response):
-            return f"❌ [UNAVAILABLE] @{username} (Account exists)"
-        else:
-            return f"✅ [AVAILABLE] @{username} (Username is free)"
-    except Exception as e:
-        return f"⚠️ [ERROR] @{username} (API issue: {e})"
+    # Combine logic
+    if profile_available and recovery_available:
+        print(f"[+] The username '{username}' is AVAILABLE.")
+    else:
+        print(f"[-] The username '{username}' is TAKEN.")
 
-# Usernames to check
-usernames = ["nurturethedevil", "nurturethedevilxbej"]
-
-for username in usernames:
-    result = check_instagram_username(username)
-    print(result)
-    sleep(2)  # Avoid rate-limiting
+# --- MAIN ---
+if __name__ == "__main__":
+    user = input("Enter Instagram username to check: ").strip()
+    check_username(user)
